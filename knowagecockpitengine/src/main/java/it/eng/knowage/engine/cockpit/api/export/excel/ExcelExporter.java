@@ -18,7 +18,10 @@
 package it.eng.knowage.engine.cockpit.api.export.excel;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +42,7 @@ import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -134,6 +138,91 @@ public class ExcelExporter {
 			throw new SpagoBIRuntimeException("Unsupported output type [" + outputType + "]");
 		}
 		return mimeType;
+	}
+
+	public File getExcelFile(String filePath, String fileName, String templateString, Integer documentId) {
+		File file = null;
+
+		if (templateString == null) {
+			ObjTemplate template;
+			try {
+				template = DAOFactory.getObjTemplateDAO().getBIObjectActiveTemplate(documentId);
+				if (template == null) {
+					throw new SpagoBIRuntimeException("Unable to get template for document with id [" + documentId + "]");
+				}
+				templateString = new String(template.getContent());
+			} catch (EMFAbstractError e) {
+				throw new SpagoBIRuntimeException("Unable to get template for document with id [" + documentId + "]");
+			}
+		}
+
+		Workbook wb = new SXSSFWorkbook(100);
+
+		try {
+			String widgetId = parameterMap.get("widget")[0];
+			exportWidget(templateString, widgetId, wb);
+
+			FileOutputStream out = new FileOutputStream(filePath + fileName);
+			wb.write(out);
+			out.close();
+
+			// dispose of temporary files backing this workbook on disk
+			((SXSSFWorkbook) wb).dispose();
+			wb.close();
+			file = new File(filePath + fileName);
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return file;
+	}
+
+	public void getFakeFile(OutputStream out) {
+		Workbook wb = new SXSSFWorkbook(100);
+		// File file = null;
+		// String fileName = "poiStreamTest_2.xlsx";
+		try {
+			// create 2 sheets
+			for (int i = 0; i < 2; i++) {
+				Sheet sheet;
+				if (i == 0) {
+					sheet = wb.createSheet("Sheet A");
+				} else {
+					sheet = wb.createSheet("Sheet B");
+				}
+
+				// fill rows
+				for (int rowNum = 0; rowNum < 10000; rowNum++) {
+					Row row = sheet.createRow(rowNum);
+					for (int cellNum = 0; cellNum < 5; cellNum++) {
+						Cell cell = row.createCell(cellNum);
+						if (rowNum == 0) {
+							cell.setCellValue("Colum " + String.valueOf(cellNum + 1));
+						} else {
+							if (i == 0)
+								cell.setCellValue("Value Sheet A");
+							else
+								cell.setCellValue("Value Sheet B");
+
+						}
+					}
+
+				}
+			}
+
+			// FileOutputStream out = new FileOutputStream(directoryPath + fileName);
+			wb.write(out);
+			// out.close();
+
+			// dispose of temporary files backing this workbook on disk
+			((SXSSFWorkbook) wb).dispose();
+			wb.close();
+			// file = new File(directoryPath + fileName);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// return file;
 	}
 
 	public byte[] getBinaryData(Integer documentId, String documentLabel, String templateString) {
