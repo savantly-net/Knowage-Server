@@ -27,14 +27,15 @@ function pythonWidgetEditControllerFunction(
 		sbiModule_translate,
 		$mdDialog,
 		mdPanelRef) {
-	
+
 	$scope.translate = sbiModule_translate;
 	$scope.newModel = angular.copy(model);
-	
-	//stub variables
-	$scope.newModel.pythonType = "txt";
-	$scope.newModel.pythonOutput = $scope.newModel.pythonCode;
-	
+
+	$scope.newModel.types = [
+        "img",
+        "text"
+    ];
+
 	$scope.editorOptionsPython = {
         theme: 'eclipse',
         lineWrapping: true,
@@ -42,7 +43,7 @@ function pythonWidgetEditControllerFunction(
         mode: {name: "python"},
         onLoad: $scope.codemirrorLoaded
 	};
-	 
+
 	//codemirror initializer
 	$scope.codemirrorLoaded = function (_editor) {
 		$scope._doc = _editor.getDoc();
@@ -59,7 +60,7 @@ function pythonWidgetEditControllerFunction(
 		$scope.$destroy();
 		finishEdit.resolve();
 	};
-	
+
 	$scope.cancelConfiguration = function () {
 		mdPanelRef.close();
 		$scope.$destroy();
