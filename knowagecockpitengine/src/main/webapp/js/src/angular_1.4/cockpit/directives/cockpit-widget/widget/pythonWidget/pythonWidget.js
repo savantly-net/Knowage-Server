@@ -70,6 +70,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	  		return cockpitModule_generalServices.getTemplateUrl('pythonWidget', template);
 	  	}
 
+		$scope.test = function () {
+			alert("ciao");
+		}
+
 		$scope.refresh = function (element, width, height, datasetRecords, nature) {
 			$scope.showWidgetSpinner();
 			if(nature == 'init') {

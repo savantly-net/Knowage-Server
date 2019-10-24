@@ -33,7 +33,9 @@ function pythonWidgetEditControllerFunction(
 
 	$scope.newModel.types = [
         "img",
-        "text"
+        "text",
+        "html",
+        "bokeh"
     ];
 
 	$scope.editorOptionsPython = {
