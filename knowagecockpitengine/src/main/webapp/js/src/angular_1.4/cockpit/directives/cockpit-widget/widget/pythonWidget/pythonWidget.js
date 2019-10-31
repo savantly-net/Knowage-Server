@@ -70,10 +70,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	  		return cockpitModule_generalServices.getTemplateUrl('pythonWidget', template);
 	  	}
 
-		$scope.test = function () {
-			alert("ciao");
-		}
-
 		$scope.refresh = function (element, width, height, datasetRecords, nature) {
 			$scope.showWidgetSpinner();
 			if(nature == 'init') {
@@ -82,7 +78,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 					cockpitModule_properties.INITIALIZED_WIDGETS.push($scope.ngModel.id);
 				}, 500);
 			}
-			$scope.sendData()
+			$scope.sendData();
 			$scope.hideWidgetSpinner();
 		}
 
@@ -90,15 +86,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			$scope.refreshWidget();
 		}
 
+		$scope.createIframe = function () {
+			var element = document.getElementById('bokeh');
+			var iframe = document.createElement('iframe');
+			iframe.id = "bokeh_" + $scope.ngModel.id;
+			iframe.classList.add("layout-fill");
+			element.append(iframe);
+			document.getElementById(iframe.id).contentWindow.document.open();
+			document.getElementById(iframe.id).contentWindow.document.write($scope.pythonOutput);
+			document.getElementById(iframe.id).contentWindow.document.close();
+		}
+
 		$scope.sendData = function () {
 		    $http({
 		        url: 'http://localhost:8000/' + $scope.ngModel.pythonOutputType,
 		        method: "POST",
 		        headers: {'Content-Type': 'application/json'},
-		        data: { 'script' : $scope.ngModel.pythonCode, 'output_variable' : $scope.ngModel.pythonOutput }
+		        data: { 'script' : $scope.ngModel.pythonCode,
+		        		'output_variable' : $scope.ngModel.pythonOutput,
+		        		'widget_id' :  $scope.ngModel.id }
 		    })
 		    .then(function(response) {
 		            $scope.pythonOutput = $sce.trustAsHtml(response.data);
+		            if ($scope.ngModel.pythonOutputType == 'bokeh') {
+						$scope.createIframe();
+					}
 		    },
 		    function(response) { // todo
 		            // failed
