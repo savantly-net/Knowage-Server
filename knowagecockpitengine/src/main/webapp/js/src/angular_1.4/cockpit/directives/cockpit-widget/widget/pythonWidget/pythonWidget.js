@@ -64,7 +64,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			$sce,
 			sbiModule_translate,
 			cockpitModule_properties,
-			cockpitModule_generalServices) {
+			cockpitModule_generalServices,
+			cockpitModule_datasetServices) {
 
 		$scope.getTemplateUrl = function (template) {
 	  		return cockpitModule_generalServices.getTemplateUrl('pythonWidget', template);
@@ -98,10 +99,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		$scope.sendData = function () {
+			url_string = window.location.href
+			var url = new URL(url_string);
+			var encodedUserId = url.searchParams.get("user_id");
+			if ($scope.ngModel.dataset != undefined) {
+				var dataset = cockpitModule_datasetServices.getDatasetById($scope.ngModel.dataset.dsId);
+				dataset_name = dataset.label
+			}
+			else {
+				dataset_name = "" //no dataset selected
+			}
 		    $http({
 		        url: 'http://localhost:8000/' + $scope.ngModel.pythonOutputType,
 		        method: "POST",
-		        headers: {'Content-Type': 'application/json'},
+		        headers: {'Content-Type': 'application/json',
+		        		  'Authorization': encodedUserId,
+		        		  'Dataset-name': dataset_name},
 		        data: { 'script' : $scope.ngModel.pythonCode,
 		        		'output_variable' : $scope.ngModel.pythonOutput,
 		        		'widget_id' :  $scope.ngModel.id }
