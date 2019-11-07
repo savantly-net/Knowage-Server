@@ -1249,6 +1249,21 @@
 			}
 		}
 	}    
+	
+	.pythonWidgetConfiguration {
+		position: absolute;
+   		width: 90%;
+   		height: 90%;
+   		margin: 2% 5%;
+   		.pythonEditor {
+   			.CodeMirror {
+				height: 500px;
+			}
+   		}
+		.CodeMirror {
+			width: 100%;
+		}
+	}
 
 	.customTableWidgetConfiguration {
 	    position: absolute;
@@ -3057,6 +3072,19 @@
 			.description {
 				font-size: $mediumFontSize;
 			}
+		}
+	}
+	.pythonWidgetConfiguration {
+		section {
+			height: 100%;
+		}
+   		.pythonEditor {
+   			.CodeMirror {
+				height: 500px;
+			}
+   		}
+		.CodeMirror {
+			width: 100%;
 		}
 	}
 	cockpit-selector-widget {

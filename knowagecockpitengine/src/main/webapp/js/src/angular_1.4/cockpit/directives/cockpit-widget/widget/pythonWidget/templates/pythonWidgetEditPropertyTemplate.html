@@ -20,11 +20,15 @@
 						     		<md-input-container flex class="md-block">
 									  <label>Output Type</label>
 									  <md-select ng-model="newModel.pythonOutputType">
-								          <md-option ng-repeat="type in newModel.types" value="{{type}}">{{type}}</md-option>
+								          <md-option ng-repeat="key in newModel.keys" value="{{newModel.types[key]}}">{{key}}</md-option>
 								      </md-select>
 									</md-input-container>
-									<md-input-container flex class="md-block">
-									  <label>Output Variable</label>
+									<md-input-container flex class="md-block" ng-if="newModel.pythonOutputType == 'img'">
+									  <label>Output file name</label>
+									  <input type="text" ng-model="newModel.pythonOutput">
+									</md-input-container>
+									<md-input-container flex class="md-block" ng-if="newModel.pythonOutputType == 'html'">
+									  <label>Output variable name</label>
 									  <input type="text" ng-model="newModel.pythonOutput">
 									</md-input-container>
 								</md-card-content>

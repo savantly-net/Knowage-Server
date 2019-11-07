@@ -16,6 +16,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * @author Marco Balestri <marco.balestri@eng.it>
+ */
 
 (function () {
 	angular
@@ -88,7 +91,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		$scope.createIframe = function () {
-			var element = document.getElementById('bokeh');
+			//var element = document.getElementById('bokeh');
+			var element = angular.element( document.querySelector( '#w' + $scope.ngModel.id + ' #bokeh' ) );
 			var iframe = document.createElement('iframe');
 			iframe.id = "bokeh_" + $scope.ngModel.id;
 			iframe.classList.add("layout-fill");
@@ -110,7 +114,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				dataset_name = "" //no dataset selected
 			}
 		    $http({
-		        url: 'http://localhost:8000/' + $scope.ngModel.pythonOutputType,
+		        url: 'http://localhost:5000/' + $scope.ngModel.pythonOutputType,
 		        method: "POST",
 		        headers: {'Content-Type': 'application/json',
 		        		  'Authorization': encodedUserId,

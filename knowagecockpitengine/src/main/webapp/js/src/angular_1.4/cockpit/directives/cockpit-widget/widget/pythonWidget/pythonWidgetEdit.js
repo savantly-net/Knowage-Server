@@ -16,6 +16,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * @author Marco Balestri <marco.balestri@eng.it>
+ */
+
 angular
 	.module('cockpitModule')
 	.controller('pythonWidgetEditControllerFunction', pythonWidgetEditControllerFunction)
@@ -31,12 +35,13 @@ function pythonWidgetEditControllerFunction(
 	$scope.translate = sbiModule_translate;
 	$scope.newModel = angular.copy(model);
 
-	$scope.newModel.types = [
-        "img",
-        "text",
-        "html",
-        "bokeh"
-    ];
+	$scope.newModel.types = {
+        "Image":"img",
+        "HTML":"html",
+        "Bokeh application":"bokeh",
+	};
+
+	$scope.newModel.keys = Object.keys($scope.newModel.types);
 
 	$scope.editorOptionsPython = {
         theme: 'eclipse',
