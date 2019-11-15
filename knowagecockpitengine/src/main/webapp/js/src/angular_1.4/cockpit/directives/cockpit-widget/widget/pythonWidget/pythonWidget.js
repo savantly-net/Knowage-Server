@@ -66,6 +66,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			$http,
 			$sce,
 			sbiModule_translate,
+			sbiModule_restServices,
 			cockpitModule_properties,
 			cockpitModule_generalServices,
 			cockpitModule_datasetServices,
@@ -83,7 +84,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 					cockpitModule_properties.INITIALIZED_WIDGETS.push($scope.ngModel.id);
 				}, 500);
 			}
-			$scope.sendData();
+			// if address of python is not set yet then set it and call sendData()
+			if ($scope.pythonAddress == undefined) {
+				sbiModule_restServices.restToRootProject();
+				sbiModule_restServices.promiseGet('2.0/configs/label', 'PYTHON_ADDRESS')
+				.then(function(response){
+					$scope.pythonAddress = response.data;
+					$scope.sendData();
+				}, function(error){
+					//todo
+				});
+			}
+			else { //python address already set so just call sendData()
+				$scope.sendData();
+			}
 			$scope.hideWidgetSpinner();
 		}
 
@@ -92,47 +106,87 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		$scope.createIframe = function () {
+			// get <div> associated to this bokeh application
 			var element = angular.element(document.querySelector('#w' + $scope.ngModel.id + ' #bokeh'));
+			// create an iframe and append it to the <div>
 			var iframe = document.createElement('iframe');
 			iframe.id = "bokeh_" + $scope.ngModel.id;
 			iframe.classList.add("layout-fill");
 			element.append(iframe);
+			// write content inside the iframe
 			document.getElementById(iframe.id).contentWindow.document.open();
 			document.getElementById(iframe.id).contentWindow.document.write($scope.pythonOutput);
 			document.getElementById(iframe.id).contentWindow.document.close();
 		}
 
-		$scope.sendData = function () {
+		$scope.buildAggregations = function (meta, dataset_label) {
+			aggregations = {"measures": [], "categories": [], "dataset": dataset_label};
+			for (i=0; i<meta.length; i++) {
+				x = meta[i];
+				if (x.fieldType == "MEASURE") {
+					item = {"id": x.name, "alias": x.alias, "columnName": x.name, "orderType": "", "funct": "SUM", "orderColumn": x.name}
+					aggregations.measures.push(item)
+				}
+				else if (x.fieldType == "ATTRIBUTE") {
+					item = {"id": x.name, "alias": x.alias, "columnName": x.name, "orderType": "", "funct": "NONE"}
+					aggregations.categories.push(item)
+				}
+			}
+			return aggregations;
+		}
+
+		$scope.sendData = function () { //send code and data to python and retrieve result as img or html/js
+			//get user_id from parameters and use it for authentication in python
 			url_string = window.location.href
 			var url = new URL(url_string);
 			var encodedUserId = url.searchParams.get("user_id");
+			//if there is a dataset selected save its label
 			if ($scope.ngModel.dataset != undefined && !angular.equals({}, $scope.ngModel.dataset)) {
 				var dataset = cockpitModule_datasetServices.getDatasetById($scope.ngModel.dataset.dsId);
-				dataset_name = dataset.label
-				var sel = cockpitModule_widgetSelection.getCurrentSelections(dataset_name);
+				var selections = cockpitModule_datasetServices.getWidgetSelectionsAndFilters($scope.ngModel, dataset);
+				var dataset_label = dataset.label;
+				var aggregations = $scope.buildAggregations(dataset.metadata.fieldsMeta, dataset_label);
 			}
-			else {
-				dataset_name = "" //no dataset selected
+			else { //no dataset selected
+				var dataset_label = "";
+				var selections = "";
+				var aggregations = "";
 			}
+/*
+			$http({
+		        url: "http://localhost:8080/knowage/restful-services/2.0/datasets/toy_dataset/data",
+		        method: "POST",
+		        headers: {'Authorization': "Direct " + btoa(encodedUserId)},
+		        data: { "aggregations": aggregations, 'selections': selections}
+		    })
+		    .then(function(response) { //success
+		    },
+		    function(response) { //failed
+		    });
+*/
+
 		    $http({
-		        url: 'http://localhost:5000/' + $scope.ngModel.pythonOutputType,
+		        url: $scope.pythonAddress.valueCheck + $scope.ngModel.pythonOutputType,
 		        method: "POST",
 		        headers: {'Content-Type': 'application/json',
 		        		  'Authorization': encodedUserId,
-		        		  'Dataset-name': dataset_name},
+		        		  'Dataset-name': dataset_label,
+		        		  'parameters': [] },
 		        data: { 'script' : $scope.ngModel.pythonCode,
 		        		'output_variable' : $scope.ngModel.pythonOutput,
-		        		'widget_id' :  $scope.ngModel.id }
+		        		'widget_id' :  $scope.ngModel.id,
+		        		'datastore_request': JSON.stringify({"aggregations": aggregations, 'selections': selections})}
 		    })
-		    .then(function(response) {
+		    .then(function(response) { //success
 		            $scope.pythonOutput = $sce.trustAsHtml(response.data);
 		            if ($scope.ngModel.pythonOutputType == 'bokeh') {
 						$scope.createIframe();
 					}
 		    },
-		    function(response) { // todo
-		            // failed
+		    function(response) { //failed
+		    	$scope.pythonOutput = 'Error: ' + $sce.trustAsHtml(response.data);
 		    });
+
 		}
 
 		$scope.init = function (element, width, height) {
