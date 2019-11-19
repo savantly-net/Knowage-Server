@@ -30,7 +30,10 @@ function pythonWidgetEditControllerFunction(
 		model,
 		sbiModule_translate,
 		$mdDialog,
-		mdPanelRef) {
+		mdPanelRef,
+		cockpitModule_datasetServices,
+		cockpitModule_analyticalDrivers,
+		cockpitModule_helperDescriptors) {
 
 	$scope.translate = sbiModule_translate;
 	$scope.newModel = angular.copy(model);
@@ -42,6 +45,24 @@ function pythonWidgetEditControllerFunction(
 	};
 
 	$scope.newModel.keys = Object.keys($scope.newModel.types);
+
+	$scope.$watch('newModel.dataset.dsId',function(newValue,oldValue){
+		if(newValue){
+			$scope.availableDatasets=cockpitModule_datasetServices.getAvaiableDatasets();
+			var dsIndex;
+			for(var d in $scope.availableDatasets){
+				if($scope.availableDatasets[d].id.dsId == newValue) dsIndex = d;
+			}
+			if(!newValue || typeof dsIndex != 'undefined'){
+				$scope.dataset = $scope.availableDatasets[dsIndex];
+				$scope.newModel.content.columnSelectedOfDataset = $scope.dataset.metadata.fieldsMeta;
+			}
+		}else{
+			if($scope.newModel.content && $scope.newModel.content.columnSelectedOfDataset) $scope.newModel.content.columnSelectedOfDataset = [];
+		}
+		$scope.helper = cockpitModule_helperDescriptors.pythonHelperJSON(newValue,$scope.dataset ? $scope.dataset.metadata.fieldsMeta : null,$scope.formattedAnalyticalDrivers,$scope.aggregations,$scope.newModel.cross,$scope.availableDatasets);
+
+	})
 
 	$scope.editorOptionsPython = {
         theme: 'eclipse',

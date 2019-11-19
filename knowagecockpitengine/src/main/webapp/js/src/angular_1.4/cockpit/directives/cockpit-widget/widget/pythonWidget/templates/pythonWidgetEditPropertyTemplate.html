@@ -46,6 +46,36 @@
 								</md-card-content>
 							</md-card>
 						</div>
+						<div class="availableFunctions" flex="20">
+					      <md-toolbar class="secondaryToolbar">
+					        <h1 class="md-toolbar-tools">{{translate.load('kn.cockpit.html.availabletags')}}</h1>
+					      </md-toolbar>
+					  		<md-subheader class="expandableSubheader" ng-repeat-start="tag in helper" layout="row" ng-click="toggleTag(tag)">{{tag.label}}<i class="fa" ng-class="{'fa-chevron-up':tag.opened,'fa-chevron-down':!tag.opened}"></i></md-subheader>
+					  		<div layout="column" style="background-color: white;" ng-if="tag.opened">
+						  		<p layout-padding class="description">
+						          {{tag.description}}
+						        </p>
+						        <div class="kn-noItems" ng-if="tag.hidden">{{tag.hiddenMessage}}</div>
+				  				<div layout="row" ng-if="!tag.hidden" style="padding:8px" layout-wrap>
+					  				<md-input-container ng-repeat="input in tag.inputs" class="md-block" ng-class="input.flex">
+										<label ng-if="input.type != 'check'">{{input.label || input.name}}</label>
+										<md-select ng-if="input.type == 'select'" ng-model="helper[tag.name][input.name]" >
+											<md-option ng-repeat="opt in input.options" ng-value="opt.name">{{opt.name}}</md-option>
+										</md-select>
+										<input ng-if="input.type == 'number'" type="number" ng-model="helper[tag.name][input.name]"/>
+										<input ng-if="input.type == 'text'" type="text" ng-model="helper[tag.name][input.name]"/>
+										<textarea ng-if="input.type == 'area'" ng-model="helper[tag.name][input.name]" md-maxlength="150" rows="3"></textarea>
+										<md-checkbox ng-if="input.type == 'check'" ng-model="helper[tag.name][input.name]">{{input.label || input.name}}</md-checkbox>
+									</md-input-container>
+								</div>
+								<div layout="row" ng-if="!tag.hidden">
+									<md-button style="width: 100%;line-height: 22px;height: 30px;" ng-click="insertCode(tag)">
+				  					Insert
+				  					</md-button>
+								</div>
+							</div>
+							<md-divider ng-repeat-end></md-divider>
+					    </div>
 				    </md-content>
 
 				<!-- FINE EDITOR -->
@@ -61,7 +91,13 @@
 		   				</md-card-content>
 		   			</md-card>	
 		     	</md-tab>
-		        
+		        <md-tab label="{{translate.load('sbi.cockpit.widget.table.cross')}}" >
+					<cockpit-cross-configurator widget ng-cloak ng-model="newModel.cross"></cockpit-cross-configurator>
+				</md-tab>
+		     	
+		     	<md-tab label="{{::translate.load('sbi.cockpit.widget.table.filters')}}">
+					<cockpit-filters-configuration ng-model-shared="newModel" ></cockpit-filters-configuration>
+				</md-tab>
 	      	</md-tabs>
 	    </md-content>
     </md-card-content>

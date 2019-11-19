@@ -152,18 +152,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				var selections = "";
 				var aggregations = "";
 			}
-/*
-			$http({
-		        url: "http://localhost:8080/knowage/restful-services/2.0/datasets/toy_dataset/data",
-		        method: "POST",
-		        headers: {'Authorization': "Direct " + btoa(encodedUserId)},
-		        data: { "aggregations": aggregations, 'selections': selections}
-		    })
-		    .then(function(response) { //success
-		    },
-		    function(response) { //failed
-		    });
-*/
 
 		    $http({
 		        url: $scope.pythonAddress.valueCheck + $scope.ngModel.pythonOutputType,
