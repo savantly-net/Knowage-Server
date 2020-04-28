@@ -10,6 +10,7 @@ public class CatalogFunction {
 	private int functionId;
 	private String name;
 	private String description;
+	private String benchmarks;
 	private String language;
 	private String script;
 	private String owner;
@@ -71,6 +72,14 @@ public class CatalogFunction {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getBenchmarks() {
+		return benchmarks;
+	}
+
+	public void setBenchmarks(String benchmarks) {
+		this.benchmarks = benchmarks;
 	}
 
 	public String getLanguage() {

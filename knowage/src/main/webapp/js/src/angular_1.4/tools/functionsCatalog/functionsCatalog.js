@@ -429,11 +429,9 @@ function functionsCatalogFunction(sbiModule_config, sbiModule_translate,
 				}
 			}
 		}
-		if ($scope.shownFunction.description == ""
-				|| $scope.shownFunction.description == "") {
+		if ($scope.shownFunction.description == "" || $scope.shownFunction.benchmarks == "") {
 			correctArguments = false;
-			$scope.missingFields.push("Function description missing");
-
+			$scope.missingFields.push("Function description or benchmarks missing");
 		}
 		if ($scope.shownFunction.remote == true && ($scope.shownFunction.url == undefined || $scope.shownFunction.url == "")) {
 			correctArguments = false;

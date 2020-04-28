@@ -232,6 +232,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	          				<label class="customLabel">{{translate.load("sbi.functionscatalog.description");}}</label>
 		          			<wysiwyg-edit ng-if="(isAdmin || (isDev && shownFunction.owner==ownerUserName))" content="shownFunction.description"  layout-fill config="editorConfig"></wysiwyg-edit>
 		          			<div ng-if="!(isAdmin || (isDev && shownFunction.owner==ownerUserName))" ng-bind-html=shownFunction.description></div> 
+		          			
+		          			<label class="customLabel">{{translate.load("sbi.functionscatalog.benchmarks");}}</label>
+		          			<wysiwyg-edit ng-if="(isAdmin || (isDev && shownFunction.owner==ownerUserName))" content="shownFunction.benchmarks"  layout-fill config="editorConfig"></wysiwyg-edit>
+		          			<div ng-if="!(isAdmin || (isDev && shownFunction.owner==ownerUserName))" ng-bind-html=shownFunction.benchmarks></div> 
 						</md-card-content>
 					</md-card>
 				</md-tab>
