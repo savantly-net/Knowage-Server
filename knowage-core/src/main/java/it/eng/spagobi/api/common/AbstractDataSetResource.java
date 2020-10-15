@@ -244,8 +244,10 @@ public abstract class AbstractDataSetResource extends AbstractSpagoBIResource {
 
 			IDataStore dataStore = getDatasetManagementAPI().getDataStore(dataSet, isNearRealtime, DataSetUtilities.getParametersMap(parameters), projections,
 					where, groups, sortings, summaryRowArray, offset, fetchSize, maxRowCount, indexes);
-			IDataWriter dataWriter = getDataStoreWriter();
 
+			// TO DO: if required apply function from catalog
+
+			IDataWriter dataWriter = getDataStoreWriter();
 			timing = MonitorFactory.start("Knowage.AbstractDataSetResource.getDataStore:convertToJson");
 			Object gridDataFeed = dataWriter.write(dataStore);
 			timing.stop();
