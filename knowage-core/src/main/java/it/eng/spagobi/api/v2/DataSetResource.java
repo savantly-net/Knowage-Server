@@ -457,28 +457,25 @@ public class DataSetResource extends AbstractDataSetResource {
 				if (dataSet instanceof AbstractJDBCDataset) {
 					IDataBase database = DataBaseFactory.getDataBase(dataSet.getDataSource());
 					isNearRealtimeSupported = database.getDatabaseDialect().isInLineViewSupported() && !dataSet.hasDataStoreTransformer();
-					jsonSbiDataSet.put("isNearRealtimeSupported", isNearRealtimeSupported);
-
-					ja.put(jsonSbiDataSet);
 				} else if (dataSet instanceof QbeDataSet) {
-					String businessModelName = (String) jsonSbiDataSet.getJSONObject("configuration").get("qbeDatamarts");
-					drivers = getDatasetDriversByModelName(businessModelName, loadDSwithDrivers);
-					if (drivers != null) {
+					try {
+						String businessModelName = (String) jsonSbiDataSet.getJSONObject("configuration").get("qbeDatamarts");
+						drivers = getDatasetDriversByModelName(businessModelName, loadDSwithDrivers);
+						if (drivers == null) {
+							continue;
+						}
 						jsonSbiDataSet.put("drivers", drivers);
 						IDataBase database = DataBaseFactory.getDataBase(dataSet.getDataSource());
 						isNearRealtimeSupported = database.getDatabaseDialect().isInLineViewSupported() && !dataSet.hasDataStoreTransformer();
-						jsonSbiDataSet.put("isNearRealtimeSupported", isNearRealtimeSupported);
-
-						ja.put(jsonSbiDataSet);
+					} catch (Exception e) {
+						LogMF.error(logger, "Error loading dataset {0} with id {1}", new String[] { ds.getName(), ds.getId().getDsId().toString() });
+						throw e;
 					}
-
 				} else if (dataSet instanceof FlatDataSet || dataSet.isPersisted() || dataSet.getClass().equals(SolrDataSet.class)) {
 					isNearRealtimeSupported = true;
-					jsonSbiDataSet.put("isNearRealtimeSupported", isNearRealtimeSupported);
-
-					ja.put(jsonSbiDataSet);
 				}
-
+				jsonSbiDataSet.put("isNearRealtimeSupported", isNearRealtimeSupported);
+				ja.put(jsonSbiDataSet);
 			}
 			jo.put("item", ja);
 			jo.put("itemCount", dao.countSbiDataSet(search, idArray));
