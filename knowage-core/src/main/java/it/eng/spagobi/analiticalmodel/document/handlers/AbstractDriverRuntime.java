@@ -296,22 +296,8 @@ public abstract class AbstractDriverRuntime<T extends AbstractDriver> {
 				lovValueColumnName = lovProvDet.getValueColumnName();
 			}
 
-			// check if to retrieve defaultValues, if it is not LOOKUP or if it is from Cross
 			boolean retrieveAdmissibleValue = false;
-			boolean lookupAndCrossCase = false;
-			if (driver instanceof BIObjectParameter) {
-				lookupAndCrossCase = (isFromCross && ("LOOKUP".equalsIgnoreCase(selectionType)));
-			} else if (driver instanceof BIMetaModelParameter) {
-				lookupAndCrossCase = ("LOOKUP".equalsIgnoreCase(selectionType));
-			}
-			logger.debug("Is lookup and cross case? " + lookupAndCrossCase);
-			boolean otherPreLoadCase = (("COMBOBOX".equalsIgnoreCase(selectionType) || "LIST".equalsIgnoreCase(selectionType)
-					|| "SLIDER".equalsIgnoreCase(selectionType) || "TREE".equalsIgnoreCase(selectionType)));
-			logger.debug("Other pre-load cases ? " + otherPreLoadCase);
-			if (lookupAndCrossCase || otherPreLoadCase) // for these type pre-load values
-			{
-				retrieveAdmissibleValue = true;
-			}
+			retrieveAdmissibleValue = areAdmissibleValuesToBePreloaded(driver);
 
 			// Load values by executing LOV
 			if (retrieveAdmissibleValue) {
@@ -441,6 +427,14 @@ public abstract class AbstractDriverRuntime<T extends AbstractDriver> {
 		}
 		logger.debug("OUT");
 
+	}
+
+	public boolean areAdmissibleValuesToBePreloaded(AbstractDriver driver) {
+		boolean preloadAdmissibleValues = true;
+		if ("LOOKUP".equalsIgnoreCase(selectionType) || "TREE".equalsIgnoreCase(selectionType)) {
+			preloadAdmissibleValues = false;
+		}
+		return preloadAdmissibleValues;
 	}
 
 	private HashMap<String, Object> fromJSONtoMap(JSONObject item) throws JSONException {
