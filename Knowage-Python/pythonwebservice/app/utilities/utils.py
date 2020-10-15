@@ -73,8 +73,13 @@ def getDatasetAsDataframe(widget):
     #rest request for dataset
     payload = widget.datastore_request
     r = requests.post(address, headers=headers, data=payload)
-    #retrieve column names from metadata
-    names = r.json()["metaData"]["fields"]
+    # retrieve column names from metadata
+    col_names = r.json()["metaData"]["fields"]
+    rows = r.json()["rows"]
+    df = convertKnowageDatasetToDataframe(col_names, rows);
+    return df;
+
+def convertKnowageDatasetToDataframe(names, rows):
     column_names = []
     column_types = {}
     for x in names:
@@ -84,15 +89,25 @@ def getDatasetAsDataframe(widget):
                 column_types.update({x['name']: "float64"})
             elif x["type"] == "int":
                 column_types.update({x['name']: "int64"})
-    #save data as dataframe
-    df = pd.DataFrame(r.json()["rows"])
-    #cast types
+    # save data as dataframe
+    df = pd.DataFrame(rows)
+    # cast types
     df = df.astype(column_types)
-    #drop first column (redundant)
+    # drop first column (redundant)
     df.drop(columns=['id'], inplace=True)
     # assign column names
     df.columns = column_names
     return df
+
+def convertDataframeToKnowageDataset(df):
+    knowage_json = []
+    n_rows, n_cols = df.shape
+    for i in range(0, n_rows):
+        element = {}
+        for j in range(0, n_cols):
+            element.update({df.columns[j]: df.loc[i][df.columns[j]]})
+        knowage_json.append(element)
+    return knowage_json
 
 def serverExists(id):
     with cm.lck:
