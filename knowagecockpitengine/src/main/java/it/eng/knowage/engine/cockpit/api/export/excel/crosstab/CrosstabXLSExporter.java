@@ -6,7 +6,6 @@ package it.eng.knowage.engine.cockpit.api.export.excel.crosstab;
  * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0, without the "Incompatible With Secondary Licenses" notice.
  * If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -14,20 +13,24 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
-import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.json.JSONException;
 
 import it.eng.knowage.engine.cockpit.api.crosstable.CrossTab;
 import it.eng.knowage.engine.cockpit.api.crosstable.CrossTab.CellType;
+import it.eng.knowage.engine.cockpit.api.crosstable.CrossTab.MeasureInfo;
 import it.eng.knowage.engine.cockpit.api.crosstable.MeasureFormatter;
 import it.eng.knowage.engine.cockpit.api.crosstable.MeasureScaleFactorOption;
 import it.eng.knowage.engine.cockpit.api.crosstable.Node;
@@ -134,10 +137,8 @@ public class CrosstabXLSExporter {
 	/**
 	 * Sheet initialization. We create as many rows as it is required to contain the crosstab.
 	 *
-	 * @param sheet
-	 *            The XLS sheet
-	 * @param json
-	 *            The crosstab data (it must have been enriched with the calculateDescendants method)
+	 * @param sheet The XLS sheet
+	 * @param json  The crosstab data (it must have been enriched with the calculateDescendants method)
 	 * @throws JSONException
 	 */
 	public int initSheet(Sheet sheet, CrossTab cs) throws JSONException {
@@ -189,17 +190,24 @@ public class CrosstabXLSExporter {
 		return endRowNum;
 	}
 
-	protected int getCellTypeNumeric() {
-		return HSSFCell.CELL_TYPE_NUMERIC;
+	private String getMeasureId(CrossTab cs, int index) {
+		List<MeasureInfo> measures = cs.getMeasures();
+		MeasureInfo measure = measures.get(index);
+		String measureId = measure.getId();
+		return measureId;
 	}
 
-	protected int getCellTypeString() {
-		return HSSFCell.CELL_TYPE_STRING;
+	protected org.apache.poi.ss.usermodel.CellType getCellTypeNumeric() {
+		return org.apache.poi.ss.usermodel.CellType.NUMERIC;
+	}
+
+	protected org.apache.poi.ss.usermodel.CellType getCellTypeString() {
+		return org.apache.poi.ss.usermodel.CellType.STRING;
 	}
 
 	public CellStyle buildNACellStyle(Sheet sheet) {
 		CellStyle cellStyleForNA = this.buildDataCellStyle(sheet);
-		cellStyleForNA.setAlignment(CellStyle.ALIGN_CENTER);
+		cellStyleForNA.setAlignment(HorizontalAlignment.CENTER);
 		return cellStyleForNA;
 	}
 
@@ -207,16 +215,11 @@ public class CrosstabXLSExporter {
 	 * Builds the rows' headers recursively with this order: |-----|-----|-----| | | | 3 | | | |-----| | | 2 | 4 | | | |-----| | 1 | | 5 | | |-----|-----| | | |
 	 * 7 | | | 6 |-----| | | | 8 | |-----|-----|-----| | | | 11 | | 9 | 10 |-----| | | | 12 | |-----|-----|-----|
 	 *
-	 * @param sheet
-	 *            The sheet of the XLS file
-	 * @param siblings
-	 *            The siblings nodes of the headers structure
-	 * @param rowNum
-	 *            The row number where the first sibling must be inserted
-	 * @param columnNum
-	 *            The column number where the siblings must be inserted
-	 * @param createHelper
-	 *            The file creation helper
+	 * @param sheet        The sheet of the XLS file
+	 * @param siblings     The siblings nodes of the headers structure
+	 * @param rowNum       The row number where the first sibling must be inserted
+	 * @param columnNum    The column number where the siblings must be inserted
+	 * @param createHelper The file creation helper
 	 * @throws JSONException
 	 */
 	protected void buildRowsHeaders(Sheet sheet, CrossTab cs, List<Node> siblings, int rowNum, int columnNum, CreationHelper createHelper, Locale locale,
@@ -260,14 +263,10 @@ public class CrosstabXLSExporter {
 	 * Add the title of the columns in the row headers
 	 *
 	 * @param sheet
-	 * @param titles
-	 *            list of titles
-	 * @param columnHeadersNumber
-	 *            number of column headers
-	 * @param startColumn
-	 *            first column of the crosstab in the xls
-	 * @param startRow
-	 *            first row of the crosstab in the xls
+	 * @param titles              list of titles
+	 * @param columnHeadersNumber number of column headers
+	 * @param startColumn         first column of the crosstab in the xls
+	 * @param startRow            first row of the crosstab in the xls
 	 * @param createHelper
 	 * @throws JSONException
 	 */
@@ -301,26 +300,26 @@ public class CrosstabXLSExporter {
 
 	public CellStyle buildDimensionCellStyle(Sheet sheet) {
 		CellStyle cellStyle = sheet.getWorkbook().createCellStyle();
-		cellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-		cellStyle.setVerticalAlignment(CellStyle.ALIGN_CENTER);
+		cellStyle.setAlignment(HorizontalAlignment.CENTER);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
 		String headerBGColor = (String) this.getProperty(PROPERTY_DIMENSION_NAME_BACKGROUND_COLOR);
 		logger.debug("Header background color : " + headerBGColor);
-		short backgroundColorIndex = headerBGColor != null ? IndexedColors.valueOf(headerBGColor).getIndex() : IndexedColors.valueOf(
-				DEFAULT_DIMENSION_NAME_BACKGROUND_COLOR).getIndex();
+		short backgroundColorIndex = headerBGColor != null ? IndexedColors.valueOf(headerBGColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_DIMENSION_NAME_BACKGROUND_COLOR).getIndex();
 		cellStyle.setFillForegroundColor(backgroundColorIndex);
 
-		cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-		cellStyle.setBorderBottom(CellStyle.BORDER_THIN);
-		cellStyle.setBorderLeft(CellStyle.BORDER_THIN);
-		cellStyle.setBorderRight(CellStyle.BORDER_THIN);
-		cellStyle.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyle.setBorderBottom(BorderStyle.THIN);
+		cellStyle.setBorderLeft(BorderStyle.THIN);
+		cellStyle.setBorderRight(BorderStyle.THIN);
+		cellStyle.setBorderTop(BorderStyle.THIN);
 
 		String bordeBorderColor = (String) this.getProperty(PROPERTY_HEADER_BORDER_COLOR);
 		logger.debug("Header border color : " + bordeBorderColor);
-		short borderColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(bordeBorderColor).getIndex() : IndexedColors.valueOf(
-				DEFAULT_HEADER_BORDER_COLOR).getIndex();
+		short borderColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(bordeBorderColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_HEADER_BORDER_COLOR).getIndex();
 
 		cellStyle.setLeftBorderColor(borderColorIndex);
 		cellStyle.setRightBorderColor(borderColorIndex);
@@ -344,7 +343,7 @@ public class CrosstabXLSExporter {
 		short colorIndex = bordeBorderColor != null ? IndexedColors.valueOf(color).getIndex() : IndexedColors.valueOf(DEFAULT_DIMENSION_NAME_COLOR).getIndex();
 		font.setColor(colorIndex);
 
-		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		font.setBold(true);
 		font.setItalic(true);
 		cellStyle.setFont(font);
 		return cellStyle;
@@ -352,26 +351,26 @@ public class CrosstabXLSExporter {
 
 	public CellStyle buildHeaderCellStyle(Sheet sheet) {
 		CellStyle cellStyle = sheet.getWorkbook().createCellStyle();
-		cellStyle.setAlignment(CellStyle.ALIGN_LEFT);
-		cellStyle.setVerticalAlignment(CellStyle.ALIGN_CENTER);
+		cellStyle.setAlignment(HorizontalAlignment.LEFT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
 		String headerBGColor = (String) this.getProperty(PROPERTY_HEADER_BACKGROUND_COLOR);
 		logger.debug("Header background color : " + headerBGColor);
-		short backgroundColorIndex = headerBGColor != null ? IndexedColors.valueOf(headerBGColor).getIndex() : IndexedColors.valueOf(
-				DEFAULT_HEADER_BACKGROUND_COLOR).getIndex();
+		short backgroundColorIndex = headerBGColor != null ? IndexedColors.valueOf(headerBGColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_HEADER_BACKGROUND_COLOR).getIndex();
 		cellStyle.setFillForegroundColor(backgroundColorIndex);
 
-		cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-		cellStyle.setBorderBottom(CellStyle.BORDER_THIN);
-		cellStyle.setBorderLeft(CellStyle.BORDER_THIN);
-		cellStyle.setBorderRight(CellStyle.BORDER_THIN);
-		cellStyle.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyle.setBorderBottom(BorderStyle.THIN);
+		cellStyle.setBorderLeft(BorderStyle.THIN);
+		cellStyle.setBorderRight(BorderStyle.THIN);
+		cellStyle.setBorderTop(BorderStyle.THIN);
 
 		String bordeBorderColor = (String) this.getProperty(PROPERTY_HEADER_BORDER_COLOR);
 		logger.debug("Header border color : " + bordeBorderColor);
-		short borderColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(bordeBorderColor).getIndex() : IndexedColors.valueOf(
-				DEFAULT_HEADER_BORDER_COLOR).getIndex();
+		short borderColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(bordeBorderColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_HEADER_BORDER_COLOR).getIndex();
 
 		cellStyle.setLeftBorderColor(borderColorIndex);
 		cellStyle.setRightBorderColor(borderColorIndex);
@@ -392,37 +391,37 @@ public class CrosstabXLSExporter {
 
 		String headerColor = (String) this.getProperty(PROPERTY_HEADER_COLOR);
 		logger.debug("Header color : " + headerColor);
-		short headerColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(headerColor).getIndex() : IndexedColors.valueOf(DEFAULT_HEADER_COLOR)
-				.getIndex();
+		short headerColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(headerColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_HEADER_COLOR).getIndex();
 		font.setColor(headerColorIndex);
 
-		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
+		font.setBold(true);
 		cellStyle.setFont(font);
 		return cellStyle;
 	}
 
 	public CellStyle buildDataCellStyle(Sheet sheet) {
 		CellStyle cellStyle = sheet.getWorkbook().createCellStyle();
-		cellStyle.setAlignment(CellStyle.ALIGN_RIGHT);
-		cellStyle.setVerticalAlignment(CellStyle.ALIGN_CENTER);
+		cellStyle.setAlignment(HorizontalAlignment.RIGHT);
+		cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
 		String cellBGColor = (String) this.getProperty(PROPERTY_CELL_BACKGROUND_COLOR);
 		logger.debug("Cell background color : " + cellBGColor);
-		short backgroundColorIndex = cellBGColor != null ? IndexedColors.valueOf(cellBGColor).getIndex() : IndexedColors.valueOf(DEFAULT_CELL_BACKGROUND_COLOR)
-				.getIndex();
+		short backgroundColorIndex = cellBGColor != null ? IndexedColors.valueOf(cellBGColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_CELL_BACKGROUND_COLOR).getIndex();
 		cellStyle.setFillForegroundColor(backgroundColorIndex);
 
-		cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-		cellStyle.setBorderBottom(CellStyle.BORDER_THIN);
-		cellStyle.setBorderLeft(CellStyle.BORDER_THIN);
-		cellStyle.setBorderRight(CellStyle.BORDER_THIN);
-		cellStyle.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyle.setBorderBottom(BorderStyle.THIN);
+		cellStyle.setBorderLeft(BorderStyle.THIN);
+		cellStyle.setBorderRight(BorderStyle.THIN);
+		cellStyle.setBorderTop(BorderStyle.THIN);
 
 		String bordeBorderColor = (String) this.getProperty(PROPERTY_CELL_BORDER_COLOR);
 		logger.debug("Cell border color : " + bordeBorderColor);
-		short borderColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(bordeBorderColor).getIndex() : IndexedColors.valueOf(
-				DEFAULT_CELL_BORDER_COLOR).getIndex();
+		short borderColorIndex = bordeBorderColor != null ? IndexedColors.valueOf(bordeBorderColor).getIndex()
+				: IndexedColors.valueOf(DEFAULT_CELL_BORDER_COLOR).getIndex();
 
 		cellStyle.setLeftBorderColor(borderColorIndex);
 		cellStyle.setRightBorderColor(borderColorIndex);
@@ -455,20 +454,13 @@ public class CrosstabXLSExporter {
 	 * |------------------------------------------| | 2 | 5 | 10 | |-----------|-----------------|------------| | 3 | 4 | 6 | 7 | 8 | 11 | 12 |
 	 * |------------------------------------------|
 	 *
-	 * @param sheet
-	 *            The sheet of the XLS file
-	 * @param siblings
-	 *            The siblings nodes of the headers structure
-	 * @param rowNum
-	 *            The row number where the siblings must be inserted
-	 * @param columnNum
-	 *            The column number where the first sibling must be inserted
-	 * @param createHelper
-	 *            The file creation helper
-	 * @param dimensionCellStyle
-	 *            The cell style for cells containing dimensions (i.e. attributes' names)
-	 * @param memberCellStyle
-	 *            The cell style for cells containing members (i.e. attributes' values)
+	 * @param sheet              The sheet of the XLS file
+	 * @param siblings           The siblings nodes of the headers structure
+	 * @param rowNum             The row number where the siblings must be inserted
+	 * @param columnNum          The column number where the first sibling must be inserted
+	 * @param createHelper       The file creation helper
+	 * @param dimensionCellStyle The cell style for cells containing dimensions (i.e. attributes' names)
+	 * @param memberCellStyle    The cell style for cells containing members (i.e. attributes' values)
 	 * @throws JSONException
 	 */
 	protected void buildColumnsHeader(Sheet sheet, CrossTab cs, List<Node> siblings, int rowNum, int columnNum, CreationHelper createHelper, Locale locale,

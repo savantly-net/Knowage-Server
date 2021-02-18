@@ -3,7 +3,7 @@ package it.eng.knowage.engine.cockpit.api.export.excel.crosstab;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
-import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.ss.usermodel.CellType;
 
 /* SpagoBI, the Open Source Business Intelligence suite
 
@@ -26,20 +26,20 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 public class CrosstabXLSXExporter extends CrosstabXLSExporter {
 
 	/** Logger component. */
-    public static transient Logger logger = Logger.getLogger(CrosstabXLSExporter.class);
+	public static transient Logger logger = Logger.getLogger(CrosstabXLSExporter.class);
 
 	public CrosstabXLSXExporter(Properties properties) {
 		super(properties);
 	}
 
 	@Override
-	protected int getCellTypeNumeric () {
-		return XSSFCell.CELL_TYPE_NUMERIC;
+	protected CellType getCellTypeNumeric() {
+		return CellType.NUMERIC;
 	}
 
 	@Override
-	protected int getCellTypeString () {
-		return XSSFCell.CELL_TYPE_STRING;
+	protected CellType getCellTypeString() {
+		return CellType.STRING;
 	}
 
 }

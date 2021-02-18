@@ -33,7 +33,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.LogMF;
 import org.apache.log4j.Logger;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
@@ -41,7 +40,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.WorkbookUtil;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -78,7 +77,6 @@ public class ExcelExporter {
 
 	static private Logger logger = Logger.getLogger(ExcelExporter.class);
 
-	private final String outputType;
 	private final String userUniqueIdentifier;
 	private final Map<String, String[]> parameterMap;
 
@@ -87,7 +85,7 @@ public class ExcelExporter {
 	private final Map<String, JSONObject> actualSelectionMap;
 	private final Map<String, String> associativeToDatasetParametersMap;
 
-	private final boolean exportWidget;
+	private final boolean isSingleWidgetExport;
 
 	private final JSONObject body;
 
@@ -98,10 +96,9 @@ public class ExcelExporter {
 
 	// Old implementation with parameterMap
 	public ExcelExporter(String outputType, String userUniqueIdentifier, Map<String, String[]> parameterMap) {
-		this.outputType = outputType;
 		this.userUniqueIdentifier = userUniqueIdentifier;
 		this.parameterMap = parameterMap;
-		this.exportWidget = false;
+		this.isSingleWidgetExport = false;
 		this.body = new JSONObject();
 
 		Locale locale = getLocale(parameterMap);
@@ -117,9 +114,8 @@ public class ExcelExporter {
 	}
 
 	public ExcelExporter(String outputType, String userUniqueIdentifier, JSONObject body) {
-		this.outputType = outputType;
 		this.userUniqueIdentifier = userUniqueIdentifier;
-		this.exportWidget = setExportWidget(body);
+		this.isSingleWidgetExport = setExportWidget(body);
 		this.body = body;
 
 		Locale locale = getLocale(body);
@@ -182,15 +178,7 @@ public class ExcelExporter {
 	}
 
 	public String getMimeType() {
-		String mimeType;
-		if ("xlsx".equalsIgnoreCase(outputType)) {
-			mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-		} else if ("xls".equalsIgnoreCase(outputType)) {
-			mimeType = "application/vnd.ms-excel";
-		} else {
-			throw new SpagoBIRuntimeException("Unsupported output type [" + outputType + "]");
-		}
-		return mimeType;
+		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 	}
 
 	public byte[] getBinaryDataPivot(Integer documentId, String documentLabel, String templateString, String options)
@@ -217,41 +205,32 @@ public class ExcelExporter {
 			}
 		}
 
-		Workbook wb;
+		try (Workbook wb = new SXSSFWorkbook()) {
 
-		if ("xlsx".equalsIgnoreCase(outputType)) {
-			wb = new XSSFWorkbook();
-		} else if ("xls".equalsIgnoreCase(outputType)) {
-			wb = new HSSFWorkbook();
-		} else {
-			throw new SpagoBIRuntimeException("Unsupported output type [" + outputType + "]");
-		}
-
-		if (exportWidget) {
-			try {
-				String widgetId = String.valueOf(body.get("widget"));
-				exportWidgetCrossTab(templateString, widgetId, wb, optionsObj);
-			} catch (JSONException e) {
-				logger.error("Cannot find widget in body request");
+			if (isSingleWidgetExport) {
+				try {
+					String widgetId = String.valueOf(body.get("widget"));
+					exportWidgetCrossTab(templateString, widgetId, wb, optionsObj);
+				} catch (JSONException e) {
+					logger.error("Cannot find widget in body request");
+				}
+			} else {
+				// TODO: Implement logic for DataReader, now everything stays in memory - bad when widget have large number of Data
+				List<JSONObject> excelSheets = getExcelSheetsList(templateString);
+				if (!excelSheets.isEmpty()) {
+					exportWidgetsToExcel(excelSheets, wb);
+				}
 			}
-		} else {
-			// TODO: Implement logic for DataReader, now everything stays in memory - bad when widget have large number of Data
-			List<JSONObject> excelSheets = getExcelSheetsList(templateString);
-			if (!excelSheets.isEmpty()) {
-				exportWidgetsToExcel(excelSheets, wb);
-			}
-		}
 
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		try {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			wb.write(out);
 			out.flush();
 			out.close();
-		} catch (IOException e) {
-			throw new SpagoBIRuntimeException("Unable to generate output file with extension [" + outputType + "]", e);
-		}
+			return out.toByteArray();
 
-		return out.toByteArray();
+		} catch (IOException e) {
+			throw new SpagoBIRuntimeException("Unable to generate output file", e);
+		}
 	}
 
 	public byte[] getBinaryData(Integer documentId, String documentLabel, String templateString) throws JSONException, SerializationException {
@@ -274,41 +253,31 @@ public class ExcelExporter {
 			}
 		}
 
-		Workbook wb;
+		try (Workbook wb = new SXSSFWorkbook()) {
 
-		if ("xlsx".equalsIgnoreCase(outputType)) {
-			wb = new XSSFWorkbook();
-		} else if ("xls".equalsIgnoreCase(outputType)) {
-			wb = new HSSFWorkbook();
-		} else {
-			throw new SpagoBIRuntimeException("Unsupported output type [" + outputType + "]");
-		}
-
-		if (exportWidget) {
-			try {
-				String widgetId = String.valueOf(body.get("widget"));
-				exportWidget(templateString, widgetId, wb);
-			} catch (JSONException e) {
-				logger.error("Cannot find widget in body request");
+			if (isSingleWidgetExport) {
+				try {
+					String widgetId = String.valueOf(body.get("widget"));
+					exportWidget(templateString, widgetId, wb);
+				} catch (JSONException e) {
+					logger.error("Cannot find widget in body request");
+				}
+			} else {
+				// TODO: Implement logic for DataReader, now everything stays in memory - bad when widget have large number of Data
+				List<JSONObject> excelSheets = getExcelSheetsList(templateString);
+				if (!excelSheets.isEmpty()) {
+					exportWidgetsToExcel(excelSheets, wb);
+				}
 			}
-		} else {
-			// TODO: Implement logic for DataReader, now everything stays in memory - bad when widget have large number of Data
-			List<JSONObject> excelSheets = getExcelSheetsList(templateString);
-			if (!excelSheets.isEmpty()) {
-				exportWidgetsToExcel(excelSheets, wb);
-			}
-		}
 
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		try {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			wb.write(out);
 			out.flush();
 			out.close();
+			return out.toByteArray();
 		} catch (IOException e) {
-			throw new SpagoBIRuntimeException("Unable to generate output file with extension [" + outputType + "]", e);
+			throw new SpagoBIRuntimeException("Unable to generate output file", e);
 		}
-
-		return out.toByteArray();
 	}
 
 	private void exportWidget(String templateString, String widgetId, Workbook wb) throws SerializationException {
@@ -691,7 +660,7 @@ public class ExcelExporter {
 
 				Row header = null;
 				Row newheader = null;
-				if (exportWidget) { // export single widget
+				if (isSingleWidgetExport) { // export single widget
 					widgetName = createUniqueSafeSheetName(widgetName);
 					sheet = wb.createSheet(widgetName);
 
@@ -770,7 +739,7 @@ public class ExcelExporter {
 				for (int r = 0; r < rows.length(); r++) {
 					JSONObject rowObject = rows.getJSONObject(r);
 					Row row;
-					if (exportWidget)
+					if (isSingleWidgetExport)
 						row = sheet.createRow((r + isGroup) + 1); // starting from second row, because the 0th (first) is Header
 					else
 						row = sheet.createRow((r + isGroup) + 2);
